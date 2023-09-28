@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.exceptions.NoDataFoundException;
 import com.example.demo.model.Note;
 import com.example.demo.service.impl.NoteServiceImpl;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,20 @@ public class NoteControllerSpringBootTests {
 
         //then
         assertThat(NoteResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(NoteResponse.getBody().equals(new Note(1,"title1","content1")));
+        assertThat(NoteResponse.getBody()).isEqualTo((new Note(1,"title1","content1")));
+    }
+
+    @Test
+    public void canRetrieveByIdWhenNotExists() {
+        // given
+        given(noteService.getNoteById(1)).willThrow(new NoDataFoundException());
+
+        // when
+        ResponseEntity<Note> NoteResponse = restTemplate.getForEntity("/v1/notes/1",Note.class);
+
+        // then
+        assertThat(NoteResponse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(NoteResponse.getBody()).isEqualTo(null);
     }
 
 }
