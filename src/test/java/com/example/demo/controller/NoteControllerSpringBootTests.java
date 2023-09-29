@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -90,19 +92,34 @@ public class NoteControllerSpringBootTests {
         given(noteService.addNote(new NoteDTO("title1", "content1")))
                 .willReturn(new Note(1, "title1", "content1"));
 
+        NoteDTO noteDTO = new NoteDTO("title1", "content1");
+
         // when
-        ResponseEntity<Note> response = restTemplate.postForEntity("/v1/notes/",
-                new NoteDTO("title1", "content1"),
-                Note.class);
+        ResponseEntity<Note> response = restTemplate.postForEntity("/v1/notes",
+                noteDTO, Note.class);
 
         // then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEqualTo(new Note(1,"title1","content1"));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(response.getBody()).isEqualTo(new Note(1, "title1", "content1"));
     }
 
     @Test
-    @Disabled
     public void canUpdateNote() {
+        //given
+        given(noteService.updateNote(1, new NoteDTO("title1", "content1")))
+                .willReturn(new Note(1, "title1", "content1"));
+        //when
+        //This following code returns void, and because of that we will use exchange instead
+        //restTemplate.put("/v1/notes/1",new NoteDTO("title1","content1"));
+
+        ResponseEntity<Note> exchange = restTemplate.exchange(
+                "/v1/notes/1", HttpMethod.PUT,
+                new HttpEntity<>(new NoteDTO("title1", "content1")),
+                Note.class);
+
+        //then
+        assertThat(exchange.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(exchange.getBody()).isEqualTo(new Note(1, "title1", "content1"));
     }
 
     @Test
@@ -115,7 +132,6 @@ public class NoteControllerSpringBootTests {
     public void canDeleteNoteWhenNotExists() {
     }
 
-    // En este, ver la forma de no hacer el verify de Mockito y en su lugar qué se podría hacer.
     @Test
     @Disabled
     public void canDeleteNote() {
