@@ -255,7 +255,7 @@ public class NoteControllerTests {
     public void canJoinNotes() throws Exception {
 
         // given
-        given(noteServiceImpl.joinNotes(1,2)).willReturn(new NoteDTO("title1+title2","content1 content2"));
+        given(noteServiceImpl.joinNotes(1,2)).willReturn(new NoteDTO("joined:title1 + title2","content1 content2"));
 
         // when
         MockHttpServletResponse response = mvc.perform(
@@ -265,6 +265,6 @@ public class NoteControllerTests {
 
         // then
         assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
-        assertThat(response.getContentAsString()).isEqualTo(jsonNoteDTO.write(new NoteDTO("title1+title2","content1 content2")).getJson());
+        assertThat(response.getContentAsString()).isEqualTo(jsonNoteDTO.write(new NoteDTO("joined:title1 + title2","content1 content2")).getJson());
     }
 }

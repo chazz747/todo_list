@@ -6,6 +6,7 @@ import com.example.demo.model.Note;
 import com.example.demo.service.impl.NoteServiceImpl;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -19,6 +20,8 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.doNothing;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class NoteControllerSpringBootTests {
@@ -123,27 +126,75 @@ public class NoteControllerSpringBootTests {
     }
 
     @Test
-    @Disabled
     public void canUpdateNoteWhenNotExists() {
+
+        // given
+        given(noteService.updateNote(1,new NoteDTO("title1","content1")))
+                .willThrow(new NoDataFoundException());
+
+        // when
+        ResponseEntity<Note> exchange = restTemplate.exchange(
+                "/v1/notes/1", HttpMethod.PUT,
+                new HttpEntity<>(new NoteDTO("title1", "content1")),
+                Note.class);
+
+        //then
+        assertThat(exchange.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(exchange.getBody()).isEqualTo(null);
     }
 
     @Test
-    @Disabled
     public void canDeleteNoteWhenNotExists() {
+
+        // given
+        willThrow(new NoDataFoundException()).given(noteService).deleteNote(1);
+
+        // when
+        restTemplate.delete("/v1/notes/{id}", 1);
+
+        // then
+        Mockito.verify(noteService).deleteNote(1);
     }
 
     @Test
-    @Disabled
     public void canDeleteNote() {
+        //given
+        doNothing().when(noteService).deleteNote(1);
+
+        //when
+        restTemplate.delete("/v1/notes/{id}", 1);
+
+        //then
+        Mockito.verify(noteService).deleteNote(1);
     }
 
     @Test
-    @Disabled
     public void canJoinNoteWhenNotExists() {
+        // given
+        willThrow(new NoDataFoundException()).given(noteService).joinNotes(0,0);
+
+        // when
+        ResponseEntity<NoteDTO> response =
+                restTemplate.getForEntity("/v1/notes/join?id1=0&id2=0", NoteDTO.class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(response.getBody()).isEqualTo(null);
     }
 
     @Test
-    @Disabled
     public void canJoinNotes() {
+
+        // given
+        given(noteService.joinNotes(1,2)).willReturn(new NoteDTO("joined:title1 + title2","content1 content2"));
+
+        // when
+        ResponseEntity<NoteDTO> response = restTemplate.getForEntity("/v1/notes/join?id1=1&id2=2", NoteDTO.class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(new NoteDTO("joined:title1 + title2","content1 content2"));
+
     }
 }
+
