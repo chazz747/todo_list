@@ -7,13 +7,12 @@ import com.example.demo.service.impl.NoteServiceImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doNothing;
 
 @ExtendWith(MockitoExtension.class)
@@ -26,6 +25,8 @@ public class DemoServiceTests {
     @InjectMocks
     private NoteServiceImpl underTest;
 
+    @Captor
+    ArgumentCaptor<Note> noteCaptor;
 
     @Test
     void testAddNote() {
@@ -36,10 +37,12 @@ public class DemoServiceTests {
         Mockito.when(noteRepository.save(note)).thenReturn(note);
         Note saved = underTest.addNote(noteDTO);
 
-        Mockito.verify(noteRepository).save(note);
+        Mockito.verify(noteRepository).save(noteCaptor.capture());
+
         Assertions.assertEquals(saved.getId(), 1);
         Assertions.assertEquals(saved.getContent(), "content1");
         Assertions.assertEquals(saved.getTitle(), "title1");
+        Assertions.assertEquals(noteCaptor.getValue(),note);
     }
 
     @Test
@@ -50,9 +53,9 @@ public class DemoServiceTests {
         NoteDTO noteToUpdate = new NoteDTO("title2", "content2");
 
         Mockito.when(noteRepository.findById(1)).thenReturn(Optional.of(note));
-        Mockito.when(noteRepository.save(Mockito.any())).thenReturn(note);
+        Mockito.when(noteRepository.save(argThat(new NoteMatcher(note)))).thenReturn(note);
         Note noteUpdated = underTest.updateNote(1, noteToUpdate);
-        Mockito.verify(noteRepository).save(Mockito.any());
+        Mockito.verify(noteRepository).save(argThat(new NoteMatcher(note)));
     }
 
     @Test
@@ -84,6 +87,7 @@ public class DemoServiceTests {
 
         NoteDTO noteJoined = underTest.joinNotes(1, 2);
 
+        Assertions.assertEquals(noteJoined.getTitle(), "joined:" + note1.getTitle() + " + " + note2.getTitle());
         Assertions.assertEquals(noteJoined.getContent(), note1.getContent() + " " + note2.getContent());
     }
 }
